@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { startTranscription, stopTranscription } from '../../redux/transcriptSlice';
-import { Button, Paper, Typography } from '@mui/material';
+import { Button, Paper, Typography } from '@mui/material';;
 import { getSocket } from '../../services/socket';
 import { initializeAudioStream, stopAudioStream } from '../../utils/audioUtils';
 import styled from 'styled-components';

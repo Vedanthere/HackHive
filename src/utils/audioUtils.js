@@ -29,6 +29,31 @@ export const recordAudio = () => {
     });
   };
   
+  export const initializeAudioStream = async (onDataAvailable) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          onDataAvailable(event.data);
+        }
+      };
+  
+      mediaRecorder.start(1000); // Send chunks every 1 second
+      return { stream, mediaRecorder };
+    } catch (error) {
+      throw new Error('Microphone access denied: ' + error.message);
+    }
+  };
+  
+  export const stopAudioStream = (mediaRecorder, stream) => {
+    if (mediaRecorder?.state === 'recording') {
+      mediaRecorder.stop();
+    }
+    stream?.getTracks().forEach(track => track.stop());
+  };
+
   // Function to play audio
   export const playAudio = (audioUrl) => {
     const audio = new Audio(audioUrl);

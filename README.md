@@ -61,6 +61,8 @@ npm install --save-dev jest-environment-jsdom
 
 npm install styled-components react-router-dom @react-icons/all-files
 
+npm install socket.io-client --save
+
 
 **Notes:**
 

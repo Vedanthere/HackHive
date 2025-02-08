@@ -1,4 +1,24 @@
 import { useEffect, useRef } from 'react';
+import io from 'socket.io-client';
+
+let socket = null;
+
+export const initializeSocket = () => {
+  socket = io('http://localhost:5000'); // Replace with your backend URL
+  return socket;
+};
+
+export const getSocket = () => {
+  if (!socket) throw new Error('Socket not initialized!');
+  return socket;
+};
+
+// For Redux integration
+export const setupSocketListeners = (dispatch) => {
+  socket.on('transcript-chunk', (chunk) => {
+    dispatch(addTranscriptChunk(chunk));
+  });
+};
 
 // WebSocket connection setup
 const createSocketConnection = (url, onMessage, onError, onClose) => {

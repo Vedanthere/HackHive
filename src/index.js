@@ -6,10 +6,8 @@ import store from './redux/store';
 import App from './App';
 import './index.css';
 
-// Create a root element for React 18
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Render the app
 root.render(
   <React.StrictMode>
     <Provider store={store}>
