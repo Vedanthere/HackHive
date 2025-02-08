@@ -1,98 +1,135 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import useLectureStore from '../store/lectureStore';
-import { transcribeAudio } from '../services/huggingface';
+
+interface Transcript {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+
+interface IWebkitSpeechRecognitionEvent {
+  resultIndex: number;
+  results: {
+    [key: number]: {
+      isFinal: boolean;
+      [key: number]: {
+        transcript: string;
+      };
+    };
+    length: number;
+  };
+}
+
+interface IWebkitSpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: IWebkitSpeechRecognitionEvent) => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+  start: () => void;
+  stop: () => void;
+}
 
 const TranscriptionPanel: React.FC = () => {
   const { isRecording, transcripts, setIsRecording, addTranscript } = useLectureStore();
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [currentText, setCurrentText] = useState<string>('');
+  const [finalText, setFinalText] = useState<string>('');
+  const recognitionRef = useRef<IWebkitSpeechRecognition | null>(null);
+  const accumulatedTextRef = useRef<string>('');
+  const isUserStoppedRef = useRef<boolean>(false);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-        } 
-      });
-      
-      // Check for supported MIME types
-      const mimeType = MediaRecorder.isTypeSupported('audio/wav') 
-        ? 'audio/wav' 
-        : 'audio/webm';
-      
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType
-      });
-      
-      chunksRef.current = [];
-      
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
+  useEffect(() => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome.');
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition() as IWebkitSpeechRecognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: IWebkitSpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      let finalTranscript = accumulatedTextRef.current;
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += ' ' + transcript;
+          accumulatedTextRef.current = finalTranscript.trim();
+          setFinalText(finalTranscript.trim());
+        } else {
+          interimTranscript += transcript;
         }
-      };
-
-      mediaRecorderRef.current.onstop = async () => {
-        try {
-          if (chunksRef.current.length > 0) {
-            const audioBlob = new Blob(chunksRef.current, { type: mimeType });
-            
-            // Convert to ArrayBuffer for processing
-            const arrayBuffer = await audioBlob.arrayBuffer();
-            if (arrayBuffer.byteLength > 0) {
-              const text = await transcribeAudio(new Blob([arrayBuffer], { type: mimeType }));
-              if (text) {
-                addTranscript({
-                  id: Date.now().toString(),
-                  text,
-                  timestamp: Date.now(),
-                });
-              }
-            }
-          }
-          chunksRef.current = [];
-        } catch (error) {
-          console.error('Failed to process audio:', error);
-          alert('Failed to process audio. Please try again.');
-        }
-      };
-
-      // Record in smaller chunks for better handling
-      mediaRecorderRef.current.start(500);
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      if (error instanceof Error) {
-        alert(`Failed to access microphone: ${error.message}`);
-      } else {
-        alert('Failed to access microphone');
       }
+
+      setCurrentText(interimTranscript);
+    };
+
+    recognition.onend = () => {
+      if (isUserStoppedRef.current) {
+        const finalText = accumulatedTextRef.current.trim();
+        if (finalText) {
+          addTranscript({
+            id: Date.now().toString(),
+            text: finalText,
+            timestamp: Date.now(),
+          });
+        }
+        setIsRecording(false);
+        setCurrentText('');
+        setFinalText('');
+        accumulatedTextRef.current = '';
+        isUserStoppedRef.current = false;
+      } else if (isRecording) {
+        recognition.start();
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'no-speech' && isRecording) {
+        recognition.stop();
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        isUserStoppedRef.current = true;
+        recognitionRef.current.stop();
+      }
+    };
+  }, [addTranscript, setIsRecording, isRecording]);
+
+  const startListening = () => {
+    if (recognitionRef.current) {
+      isUserStoppedRef.current = false;
+      accumulatedTextRef.current = '';
+      setFinalText('');
+      setCurrentText('');
+      recognitionRef.current.start();
+      setIsRecording(true);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      isUserStoppedRef.current = true;
+      recognitionRef.current.stop();
       setIsRecording(false);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (mediaRecorderRef.current) {
-        stopRecording();
-      }
-    };
-  }, []);
 
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Live Transcription</h2>
         <button
-          onClick={isRecording ? stopRecording : startRecording}
+          onClick={isRecording ? stopListening : startListening}
           className={`px-4 py-2 rounded ${
             isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
           } text-white transition-colors`}
@@ -102,19 +139,32 @@ const TranscriptionPanel: React.FC = () => {
       </div>
       
       <div className="h-[600px] overflow-y-auto bg-white rounded-lg shadow p-4">
-        {transcripts.length === 0 ? (
+        {transcripts.length === 0 && !currentText && !finalText ? (
           <p className="text-gray-500 text-center py-4">
             No transcriptions yet. Click "Start Recording" to begin.
           </p>
         ) : (
-          transcripts.map((transcript) => (
-            <div key={transcript.id} className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <span className="text-gray-500 text-sm block mb-1">
-                {new Date(transcript.timestamp).toLocaleTimeString()}
-              </span>
-              <p className="text-gray-800">{transcript.text}</p>
-            </div>
-          ))
+          <>
+            {isRecording && (
+              <div className="mb-4 p-3 bg-yellow-100 rounded-lg">
+                <span className="text-gray-500 text-sm block mb-1">
+                  {new Date().toLocaleTimeString()}
+                </span>
+                <p className="text-gray-800">
+                  {finalText} <span className="text-gray-600">{currentText}</span>
+                </p>
+              </div>
+            )}
+            
+            {transcripts.map((transcript) => (
+              <div key={transcript.id} className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <span className="text-gray-500 text-sm block mb-1">
+                  {new Date(transcript.timestamp).toLocaleTimeString()}
+                </span>
+                <p className="text-gray-800">{transcript.text}</p>
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>

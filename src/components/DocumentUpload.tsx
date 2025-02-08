@@ -3,7 +3,7 @@ import { generateSummary } from '../services/huggingface';
 import useLectureStore from '../store/lectureStore';
 
 const DocumentUpload: React.FC = () => {
-  const { setCurrentSummary } = useLectureStore();
+  const { setCurrentSummary, setDocumentText } = useLectureStore();
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -11,12 +11,13 @@ const DocumentUpload: React.FC = () => {
 
     try {
       const text = await file.text();
+      setDocumentText(text); // Store full document text
       const summary = await generateSummary(text);
       setCurrentSummary(summary);
     } catch (error) {
       console.error('Error processing document:', error);
     }
-  }, [setCurrentSummary]);
+  }, [setCurrentSummary, setDocumentText]);
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
