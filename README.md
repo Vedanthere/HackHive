@@ -63,6 +63,8 @@ npm install styled-components react-router-dom @react-icons/all-files
 
 npm install socket.io-client --save
 
+npm install vite @vitejs/plugin-react react react-dom
+
 
 **Notes:**
 
