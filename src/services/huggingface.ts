@@ -7,7 +7,14 @@ if (!API_KEY) {
   throw new Error('HuggingFace API key is not configured');
 }
 
+// HfInference to facilitate API calls with the various models.
 const hf = new HfInference(API_KEY);
+
+
+/*
+Parameters:
+  audioBlob - Sound item that will be processed.
+*/
 
 export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
   if (!audioBlob || audioBlob.size === 0) {
@@ -24,6 +31,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     // Create a new blob with the verified data
     const verifiedBlob = new Blob([arrayBuffer], { type: audioBlob.type });
 
+    // API call
     const response = await hf.automaticSpeechRecognition({
       model: 'openai/whisper-large-v3',
       data: verifiedBlob,
@@ -44,6 +52,14 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
   }
 };
 
+
+/*
+Function that given a context, find the answer to a given question.
+
+Parameteters:
+question: string - the question that is prompted.
+context: string - the context given to the model from where it will search the answer.
+*/
 export const generateAnswer = async (question: string, context: string): Promise<string> => {
   if (!question.trim() || !context.trim()) {
     throw new Error('Question and context are required');
@@ -73,6 +89,11 @@ export const generateAnswer = async (question: string, context: string): Promise
   }
 };
 
+/*
+Function that, given a text, generates a summary.
+Parameter:
+  text: strig - Text from which a summary will be generated.
+*/
 export const generateSummary = async (text: string): Promise<string> => {
   if (!text.trim()) {
     throw new Error('Text content is required for summarization');
@@ -103,9 +124,15 @@ export const generateSummary = async (text: string): Promise<string> => {
   }
 }
 
+/*
+Given text, it parses it and analyzes it to then generate questions and their corresponding answers.
+Parameters:
+  text:string - Text from which the flashcards will be generated.
+*/
 export async function generateFlashcards(text: string) {
   try {
-    const chunkSize = 400; // Adjust based on model's token limit
+    // Chunk into pieces to ensure the model can digest the text.
+    const chunkSize = 400; 
     const textChunks = splitIntoChunks(text, chunkSize);
     let allKeywords: string[] = [];
 
@@ -113,7 +140,7 @@ export async function generateFlashcards(text: string) {
       const nerResults = await hf.tokenClassification({
         model: "dslim/bert-base-NER", 
         inputs: chunk,
-        parameters: { aggregation_strategy: "simple" }, // Groups entities together
+        parameters: { aggregation_strategy: "simple" }, 
       });
 
       //console.log("NER Results for chunk:", nerResults); // Debugging
