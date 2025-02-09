@@ -73,32 +73,85 @@ export const generateAnswer = async (question: string, context: string): Promise
   }
 };
 
-export const generateSummary = async (text: string): Promise<string> => {
+export async function generateSummary(text:string)
+{
   if (!text.trim()) {
     throw new Error('Text content is required for summarization');
   }
+  const chunkSize = 400; // Adjust based on model's token limit
+  const textChunks = splitIntoChunks(text, chunkSize);
+  let allSummaries = []
 
-  try {
-    const response = await hf.summarization({
-      model: 'facebook/bart-large-cnn',
-      inputs: text,
-      parameters: {
-        max_length: 130,
-        min_length: 30,
-      },
-    });
+for (const chunk of textChunks){
+  const response = await hf.summarization({
+    model: 'facebook/bart-large-cnn',
+    inputs: chunk,
+    parameters: {
+      max_length: 400,
+      min_length: 100,
+    },
+  });
 
-    if (!response || !response.summary_text) {
-      throw new Error('Invalid response from summarization service');
-    }
-
-    return response.summary_text;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error('Summarization error:', error.message);
-      throw new Error(`Failed to generate summary: ${error.message}`);
-    }
-    console.error('Summarization error:', error);
-    throw new Error('Failed to generate summary');
+  if (!response || !response.summary_text) {
+    throw new Error('Invalid response from summarization service');
   }
-};
+
+  allSummaries.push(response);
+  }
+  return allSummaries
+}
+
+export async function generateFlashcards(textArr: string[]) {
+  try {
+    let allKeywords: string[] = [];
+
+    for (const chunk of textArr) {
+      const nerResults = await hf.tokenClassification({
+        model: "dslim/bert-base-NER", 
+        inputs: chunk,
+        parameters: { aggregation_strategy: "simple" }, // Groups entities together
+      });
+
+      // console.log("NER Results for chunk:", nerResults); // Debugging
+
+      // Collect unique words from all chunks
+      const chunkKeywords = [...new Set(nerResults.map((entity) => entity.word))];
+      allKeywords = [...new Set([...allKeywords, ...chunkKeywords])];
+    }
+
+    // console.log("Extracted Keywords:", allKeywords); // Debugging
+
+    if (allKeywords.length === 0) {
+      return [{ question: "No key concepts found", answer: "Try another text or a different model." }];
+    }
+
+    // Generate flashcards
+    const flashcards = allKeywords.map((keyword) => ({
+      question: `What is ${keyword}?`,
+      answer: `In this context, ${keyword} refers to ${getDefinitionFromText(keyword, text)}`,
+    }));
+
+    return flashcards;
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    return [];
+  }
+}
+
+// Helper function to split text into chunks
+function splitIntoChunks(text: string, chunkSize: number): string[] {
+  const words = text.split(" ");
+  let chunks: string[] = [];
+  for (let i = 0; i < words.length; i += chunkSize) {
+    chunks.push(words.slice(i, i + chunkSize).join(" "));
+  }
+  return chunks;
+}
+
+
+// Helper function to extract a relevant definition from the text
+function getDefinitionFromText(term: string, text: string): string {
+  const sentences = text.split(/[.!?]/); // Split into sentences
+  const relevantSentence = sentences.find((sentence) => sentence.includes(term));
+  return relevantSentence || "No relevant definition found.";
+}
