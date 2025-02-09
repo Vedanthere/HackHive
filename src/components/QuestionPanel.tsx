@@ -12,7 +12,7 @@ const QuestionPanel: React.FC = () => {
     e.preventDefault();
     setError('');
     const trimmedQuestion = question.trim();
-    
+
     if (!trimmedQuestion) {
       setError('Please enter a question');
       return;
@@ -36,7 +36,7 @@ const QuestionPanel: React.FC = () => {
     try {
       setIsSubmitting(true);
       const answer = await generateAnswer(trimmedQuestion, fullContext);
-      
+
       addQuestion({
         id: Date.now().toString(),
         text: trimmedQuestion,
@@ -55,7 +55,7 @@ const QuestionPanel: React.FC = () => {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h3 className="text-lg font-semibold mb-4">Questions</h3>
-      
+
       <form onSubmit={handleSubmit} className="mb-4">
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">

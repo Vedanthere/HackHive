@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import useLectureStore from '../store/lectureStore';
+import { jsPDF } from 'jspdf'; // Import jsPDF
 
 interface Transcript {
   id: string;
@@ -65,6 +67,7 @@ const TranscriptionPanel: React.FC = () => {
         }
       }
 
+      // Update the UI with interim text immediately
       setCurrentText(interimTranscript);
     };
 
@@ -72,17 +75,19 @@ const TranscriptionPanel: React.FC = () => {
       if (isUserStoppedRef.current) {
         const finalText = accumulatedTextRef.current.trim();
         if (finalText) {
-          addTranscript({
-            id: Date.now().toString(),
-            text: finalText,
-            timestamp: Date.now(),
+          // Use ReactDOM.flushSync to force an immediate UI update
+          ReactDOM.flushSync(() => {
+            addTranscript({
+              id: Date.now().toString(),
+              text: finalText,
+              timestamp: Date.now(),
+            });
+            setCurrentText('');
+            setFinalText('');
+            accumulatedTextRef.current = '';
           });
         }
         setIsRecording(false);
-        setCurrentText('');
-        setFinalText('');
-        accumulatedTextRef.current = '';
-        isUserStoppedRef.current = false;
       } else if (isRecording) {
         recognition.start();
       }
@@ -121,7 +126,51 @@ const TranscriptionPanel: React.FC = () => {
       isUserStoppedRef.current = true;
       recognitionRef.current.stop();
       setIsRecording(false);
+
+      // Immediately add the final text to the state and display it
+      const finalText = accumulatedTextRef.current.trim();
+      if (finalText) {
+        // Use ReactDOM.flushSync to force the update and prevent delay
+        ReactDOM.flushSync(() => {
+          addTranscript({
+            id: Date.now().toString(),
+            text: finalText,
+            timestamp: Date.now(),
+          });
+        });
+      }
+
+      setCurrentText('');
+      setFinalText('');
     }
+  };
+
+  // Function to generate and download PDF
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(12);
+
+    // Add title to the PDF
+    doc.text('Lecture Transcriptions', 20, 20);
+
+    // Add each transcript to the PDF
+    let yPosition = 30;
+    transcripts.forEach((transcript) => {
+      doc.text(`[${new Date(transcript.timestamp).toLocaleTimeString()}] ${transcript.text}`, 20, yPosition);
+      yPosition += 10;
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+
+    // If there's any final text currently being transcribed
+    if (finalText) {
+      doc.text(`[${new Date().toLocaleTimeString()}] ${finalText}`, 20, yPosition);
+    }
+
+    // Save the PDF
+    doc.save('lecture_transcription.pdf');
   };
 
   return (
@@ -130,14 +179,13 @@ const TranscriptionPanel: React.FC = () => {
         <h2 className="text-2xl font-bold">Live Transcription</h2>
         <button
           onClick={isRecording ? stopListening : startListening}
-          className={`px-4 py-2 rounded ${
-            isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-          } text-white transition-colors`}
+          className={`px-4 py-2 rounded ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+            } text-white transition-colors`}
         >
           {isRecording ? 'Stop Recording' : 'Start Recording'}
         </button>
       </div>
-      
+
       <div className="h-[600px] overflow-y-auto bg-white rounded-lg shadow p-4">
         {transcripts.length === 0 && !currentText && !finalText ? (
           <p className="text-gray-500 text-center py-4">
@@ -155,7 +203,7 @@ const TranscriptionPanel: React.FC = () => {
                 </p>
               </div>
             )}
-            
+
             {transcripts.map((transcript) => (
               <div key={transcript.id} className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <span className="text-gray-500 text-sm block mb-1">
@@ -166,6 +214,15 @@ const TranscriptionPanel: React.FC = () => {
             ))}
           </>
         )}
+      </div>
+
+      <div className="mt-4">
+        <button
+          onClick={downloadPDF}
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+        >
+          Download Transcription as PDF
+        </button>
       </div>
     </div>
   );
