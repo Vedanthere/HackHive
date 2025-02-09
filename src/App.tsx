@@ -22,6 +22,9 @@ const App = () => {
               {isUploadView ? 'Transcriber' : 'Upload Document'}
             </button>
           </div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Study Engine
+          </h1>
         </div>
       </header>
 
