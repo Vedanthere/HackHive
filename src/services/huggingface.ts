@@ -96,9 +96,67 @@ export const generateSummary = async (text: string): Promise<string> => {
   } catch (error) {
     if (error instanceof Error) {
       console.error('Summarization error:', error.message);
-      throw new Error(`Failed to generate summary: ${error.message}`);
+      throw new Error("Failed to generate summary: ${error.message}");
     }
     console.error('Summarization error:', error);
     throw new Error('Failed to generate summary');
   }
-};
+}
+
+export async function generateFlashcards(text: string) {
+  try {
+    const chunkSize = 400; // Adjust based on model's token limit
+    const textChunks = splitIntoChunks(text, chunkSize);
+    let allKeywords: string[] = [];
+
+    for (const chunk of textChunks) {
+      const nerResults = await hf.tokenClassification({
+        model: "dslim/bert-base-NER", 
+        inputs: chunk,
+        parameters: { aggregation_strategy: "simple" }, // Groups entities together
+      });
+
+      //console.log("NER Results for chunk:", nerResults); // Debugging
+
+      // Collect unique words from all chunks
+      const chunkKeywords = [...new Set(nerResults.map((entity) => entity.word))];
+      allKeywords = [...new Set([...allKeywords, ...chunkKeywords])];
+    }
+
+    //console.log("Extracted Keywords:", allKeywords);
+
+    if (allKeywords.length === 0) {
+      return [{ question: "No key concepts found", answer: "Try another text or a different model." }];
+    }
+
+    // Generate flashcards
+    const flashcards = allKeywords.map((keyword) => ({
+      question: `What is ${keyword}?`,
+      answer: `${keyword} refers to ${getDefinitionFromText(keyword, text)}`,
+    }));
+
+    return flashcards;
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    return [];
+  }
+}
+
+
+// Helper function to split text into chunks
+function splitIntoChunks(text: string, chunkSize: number): string[] {
+  const words = text.split(" ");
+  let chunks: string[] = [];
+  for (let i = 0; i < words.length; i += chunkSize) {
+    chunks.push(words.slice(i, i + chunkSize).join(" "));
+  }
+  return chunks;
+}
+
+
+// Helper function to extract a relevant definition from the text
+function getDefinitionFromText(term: string, text: string): string {
+  const sentences = text.split(/[.!?]/); // Split into sentences
+  const relevantSentence = sentences.find((sentence) => sentence.includes(term));
+  return relevantSentence || "No relevant definition found.";
+}
