@@ -4,7 +4,10 @@ import QuestionPanel from './components/QuestionPanel';
 import DocumentUpload from './components/DocumentUpload';
 import './App.css';
 
+
+// App File
 const App = () => {
+  // State boolean to toggle between which components to display. 
   const [isUploadView, setIsUploadView] = useState(true);
 
   return (
@@ -16,10 +19,10 @@ const App = () => {
               Lecture Transcription Assistant
             </h1>
             <button
-              onClick={() => setIsUploadView(!isUploadView)}
+              onClick={() => setIsUploadView(!isUploadView)} // Toggles the View
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              {isUploadView ? 'Transcriber' : 'Upload Document'}
+              {!isUploadView ? 'Transcriber' : 'Upload Document'}
             </button>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
