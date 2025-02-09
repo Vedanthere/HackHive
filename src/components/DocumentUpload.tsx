@@ -114,7 +114,7 @@ const DocumentUpload: React.FC = () => {
             onClick={handleProcessFile}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Process File
+            Flashcards
           </button>
           <button
             onClick={extractText}

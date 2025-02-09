@@ -1,17 +1,17 @@
-# **HackHive - StudyEngine**
+# **HackHive - Study Engine**
 
 ## Project Overview
 
-**StudyEngine** is a platform designed to address the challenge of **enhancing learning through AI-driven transcription and assessment tools**. The platform leverages APIs to provide **real-time transcription, automated question generation, and confidence-based assessment tools**. AI is the right tool for this problem as it enables **real-time processing of audio and text data, automates repetitive tasks, and allows for automated assessments**.
+**Study Engine** is a platform designed to address the challenge of **enhancing learning through AI-driven transcription and assessment tools**. The platform leverages APIs to provide **real-time transcription, automated question generation, and confidence-based assessment tools**. AI is the right tool for this problem as it enables **real-time processing of audio and text data, automates repetitive tasks, and allows for automated assessments**.
 
 ---
 
-## AI Integration & Customization with StudyEngine
+## AI Integration & Customization with Study Engine
 
-APIs like Hugging Face, and OpenAI help power **StudyEngine**, providing advanced capabilities in the following areas:
+APIs like Hugging Face, and OpenAI help power **Study Engine**, providing advanced capabilities in the following areas:
 
 ### 1. **Real-Time Transcription**
-  - **StudyEngine** integrates **Speech-to-Text** to provide real-time transcription of audio content
+  - **Study Engine** integrates **Speech-to-Text** to provide real-time transcription of audio content
   - Handles **domain-specific vocabulary** (e.g., medical, legal, or educational terminology)
   - Improves accuracy in **noisy environments** through already developed LLMs
 
