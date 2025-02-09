@@ -18,19 +18,54 @@ const QuestionPanel: React.FC = () => {
       return;
     }
 
-    // Check for duplicate question
-    if (questions.some(q => q.text.toLowerCase() === trimmedQuestion.toLowerCase())) {
-      setError('This question has already been asked');
-      return;
-    }
+    // Enhanced duplicate check with normalization
+    // Enhanced duplicate check with normalization
+const normalizedInput = trimmedQuestion
+.replace(/[^\w\s]/g, '')
+.replace(/\s+/g, ' ')
+.toLowerCase()
+.trim();
+
+const duplicate = questions.some(q => {
+const normalizedQ = q.text
+  .replace(/[^\w\s]/g, '')
+  .replace(/\s+/g, ' ')
+  .toLowerCase()
+  .trim();
+
+// Allow re-asking the same question after few seconds
+return normalizedQ === normalizedInput && (Date.now() - q.timestamp < 10);
+});
+
+if (duplicate) {
+setError('This question has already been asked recently. Please wait before asking again.');
+return;
+}
 
     // Combine context sources
     const transcriptContext = transcripts.map(t => t.text).join(' ');
     const fullContext = `${transcriptContext} ${documentText || ''}`.trim();
 
-    if (!fullContext) {
-      setError('No context available - please wait for transcription or upload document');
-      return;
+    // Basic relevance check if context exists
+    if (fullContext) {
+      const questionKeywords = new Set(
+        trimmedQuestion
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(word => word.length > 0)
+      );
+      const contextKeywords = new Set(
+        fullContext
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(word => word.length > 0)
+      );
+
+      const hasOverlap = [...questionKeywords].some(keyword => contextKeywords.has(keyword));
+      if (!hasOverlap) {
+        setError('Your question seems unrelated to the lecture material. Please base your question on the transcribed content.');
+        return;
+      }
     }
 
     try {
