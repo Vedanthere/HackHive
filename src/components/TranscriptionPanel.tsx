@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 const TranscriptionPanel = () => {
   const { isRecording, transcripts, setIsRecording, addTranscript } = useLectureStore();
   const [currentText, setCurrentText] = useState('');
+  const [paused, setPaused] = useState(false); // State to track pause
   const recognitionRef = useRef(null);
   const accumulatedTextRef = useRef('');
   const isUserStoppedRef = useRef(false);
@@ -38,6 +39,14 @@ const TranscriptionPanel = () => {
       }
 
       setCurrentText(interimTranscript);
+
+      // Check for pause and append '...'
+      if (!interimTranscript && !paused) {
+        setPaused(true);
+        setCurrentText((prevText) => prevText + '...');
+      } else if (interimTranscript && paused) {
+        setPaused(false);
+      }
     };
 
     recognition.onend = () => {
