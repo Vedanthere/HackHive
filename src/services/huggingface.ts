@@ -131,36 +131,38 @@ Parameters:
 */
 export async function generateFlashcards(text: string) {
   try {
-    // Chunk into pieces to ensure the model can digest the text.
-    const chunkSize = 400; 
+    const chunkSize = 400;
     const textChunks = splitIntoChunks(text, chunkSize);
     let allKeywords: string[] = [];
 
     for (const chunk of textChunks) {
-      const nerResults = await hf.tokenClassification({
-        model: "dslim/bert-base-NER", 
+      let response = await hf.request({
+        model: "yanekyuk/bert-keyword-extractor",
         inputs: chunk,
-        parameters: { aggregation_strategy: "simple" }, 
       });
 
-      //console.log("NER Results for chunk:", nerResults); // Debugging
+      console.log(response); // Debugging
 
-      // Collect unique words from all chunks
-      const chunkKeywords = [...new Set(nerResults.map((entity) => entity.word))];
-      allKeywords = [...new Set([...allKeywords, ...chunkKeywords])];
+      if (Array.isArray(response)) {
+        response.forEach((item) => {
+          if (item.word) allKeywords.push(item.word);
+        });
+      }
     }
 
-    //console.log("Extracted Keywords:", allKeywords);
+    allKeywords = [...new Set(allKeywords.map(keyword => keyword.toLowerCase()))]; 
 
     if (allKeywords.length === 0) {
       return [{ question: "No key concepts found", answer: "Try another text or a different model." }];
     }
 
-    // Generate flashcards
-    const flashcards = allKeywords.map((keyword) => ({
-      question: `What is ${keyword}?`,
-      answer: `${keyword} refers to ${getDefinitionFromText(keyword, text)}`,
-    }));
+    // Generate flashcards with enhanced definitions
+    const flashcards = await Promise.all(
+      allKeywords.map(async (keyword) => ({
+        question: `What is ${keyword}?`,
+        answer: `${keyword} refers to ${await getDefinitionFromText(keyword, text)}`,
+      }))
+    );
 
     return flashcards;
   } catch (error) {
@@ -168,6 +170,8 @@ export async function generateFlashcards(text: string) {
     return [];
   }
 }
+
+
 
 
 // Helper function to split text into chunks
@@ -182,8 +186,22 @@ function splitIntoChunks(text: string, chunkSize: number): string[] {
 
 
 // Helper function to extract a relevant definition from the text
-function getDefinitionFromText(term: string, text: string): string {
-  const sentences = text.split(/[.!?]/); // Split into sentences
-  const relevantSentence = sentences.find((sentence) => sentence.includes(term));
-  return relevantSentence || "No relevant definition found.";
+async function getDefinitionFromText(term: string, text: string): Promise<string> {
+  try {
+    const question = `What is ${term}?`;
+
+    // Use Hugging Face inference API for question-answering
+    const result = await hf.questionAnswering({
+      model: "deepset/roberta-base-squad2",
+      inputs: {
+        question: question,
+        context: text,
+      },
+    });
+
+    return result.answer ?? "No relevant definition found.";
+  } catch (error) {
+    console.error("Error extracting definition:", error);
+    return "No relevant definition found.";
+  }
 }
