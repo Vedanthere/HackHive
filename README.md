@@ -1,76 +1,71 @@
-# HackHive
+# **HackHive - StudyEngine**
 
-## Project Structure
-```
-src/
-├── components/
-│   ├── TranscriptionPanel/
-│   │   ├── TranscriptionPanel.jsx
-│   │   ├── TranscriptionPanel.styles.js
-│   │   └── TranscriptionPanel.test.js
-│   ├── QASection/
-│   │   ├── QASection.jsx
-│   │   └── QASection.test.js
-│   ├── DocumentUploader/
-│   │   ├── DocumentUploader.jsx
-│   │   └── DocumentUploader.test.js
-│   ├── AssessmentDisplay/
-│   │   ├── QuizCard.jsx
-│   │   ├── Flashcard.jsx
-│   │   └── ConfidenceMeter.jsx
-│   ├── NavigationDrawer/
-│   │   ├── NavigationDrawer.jsx
-│   │   └── NavigationItems.jsx
-│   └── DashboardLayout/
-│       ├── DashboardLayout.jsx
-│       └── DashboardGrid.jsx
-├── redux/
-│   ├── store.js
-│   ├── transcriptSlice.js
-│   ├── qaSlice.js
-│   └── assessmentSlice.js
-├── services/
-│   ├── api.js                   # Updated with Azure endpoints
-│   └── socket.js                # Updated for Azure Web PubSub
-├── utils/
-│   ├── documentParser.js        # Updated for Azure Blob Storage
-│   ├── azureAuth.js             # New AAD integration
-│   ├── audioUtils.js
-│   └── documentParser.js        # (Consolidated)
-├── App.jsx
-└── main.jsx
-```
+## Project Overview
 
+**StudyEngine** is a platform designed to address the challenge of **enhancing learning through AI-driven transcription and assessment tools**. The platform leverages APIs to provide **real-time transcription, automated question generation, and confidence-based assessment tools**. AI is the right tool for this problem as it enables **real-time processing of audio and text data, automates repetitive tasks, and allows for automated assessments**.
+
+---
+
+## AI Integration & Customization with StudyEngine
+
+APIs like Hugging Face, and OpenAI help power **StudyEngine**, providing advanced capabilities in the following areas:
+
+### 1. **Real-Time Transcription**
+  - **StudyEngine** integrates **Speech-to-Text** to provide real-time transcription of audio content
+  - Handles **domain-specific vocabulary** (e.g., medical, legal, or educational terminology)
+  - Improves accuracy in **noisy environments** through already developed LLMs
+
+### 2. **Question Answering Section**
+  - The **QASection** component uses "dslim/bert-base-NER" API to answer questions for the transcription
+  - Generates **contextually relevant answers** based on the input text
+
+### 3. **Assessment and Summary**
+  - Allows user to upload files and generate a summary of important topics
+  - Prepares flash cards for users based on uploaded file
+
+---
 
 ## Installation
 
-To set up the project, run the following commands:
+To set up the project, run the following commands (plus their respective types (npm install @types/<library name>)):
 
-```bash
+
 npm install
 
-npm install @mui/icons-material react-dropzone styled-components
+npm install @huggingface/inference  
 
-npm install styled-components react react-dom
+npm install @microsoft/fetch-event-source  
 
-npm install styled-components prop-types @testing-library/react
+npm install groq-sdk  
 
-npm install --save-dev jest babel-jest @babel/preset-env @babel/preset-react
+npm install jspdf  
 
-npm install --save-dev jest-environment-jsdom
+npm install react-markdown  
 
-npm install styled-components react-router-dom @react-icons/all-files
+npm install react-pdftotext  
 
-npm install socket.io-client --save
+npm install react-router-dom
 
-npm install vite @vitejs/plugin-react react react-dom
+npm install react-speech-recognition
+
+npm install zustand  
 
 
-**Notes:**
+npm install -D @eslint/js  
 
-- The directory structure is enclosed within triple backticks (\`\`\`) with the language identifier omitted to render it as a plain code block.
-- Each command is also enclosed within triple backticks with `bash` specified to indicate shell commands.
-- Ensure that the directory structure and commands are correctly indented to maintain readability.
+npm install -D eslint-plugin-react-hooks 
+ 
+npm install -D eslint-plugin-react-refresh 
+ 
+npm install -D globals  
 
-For more information on representing directory structures in Markdown, you can refer to this discussion: :contentReference[oaicite:0]{index=0}
-::contentReference[oaicite:1]{index=1}
+npm install -D typescript-eslint  
+
+npm install -D autoprefixer  
+
+npm install -D postcss  
+
+npm install -D tailwindcss  
+
+
+npm run dev
